@@ -17,6 +17,13 @@
 | <img src="docs/screenshots/progress.png" width="240" alt="推移"> | <img src="docs/screenshots/settings.png" width="240" alt="設定"> |
 | 体重のグラフと、通った日のカレンダー | 週の目標、通知のタイミング、通知が届くかの確認、Googleカレンダー連携 |
 
+### PC 版
+
+| 記録 | スマホとつなぐ |
+| --- | --- |
+| <img src="docs/screenshots/pc-records.png" width="480" alt="PC 版の記録"> | <img src="docs/screenshots/pc-connect.png" width="480" alt="PC 版のスマホとつなぐ"> |
+| 今週の達成と連続週数、今月通った日、今日の予定、通った日のカレンダー、体重・体脂肪のグラフ | スマホに入れる IP アドレスとペアリングコード、同期サーバーと MySQL の状態 |
+
 ## 構成
 
 | モジュール | 中身 |
