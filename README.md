@@ -3,6 +3,20 @@
 週3回のジム通いを習慣にするための、自分専用の Android アプリ（アプリ名「MuscleHabit」）。
 設計書：Claude Docs「ジム習慣化アプリ 設計書（Android / Kotlin）」、画面イメージ：「ジム習慣化アプリ 画面イメージ」。
 
+リポジトリ：https://github.com/momoree/muscle-habit
+
+## スクリーンショット
+
+| ホーム | トレーニング記録 | 予定 |
+| --- | --- | --- |
+| <img src="docs/screenshots/home.png" width="240" alt="ホーム"> | <img src="docs/screenshots/workout.png" width="240" alt="トレーニング記録"> | <img src="docs/screenshots/schedule.png" width="240" alt="予定"> |
+| 今週の達成と連続週数、今日の予定、チェックイン、今日のトレーニング、体重 | 種目を選んで重量と回数を入れ、セットを追加。マイメニューと「前回と同じ」 | 通う曜日と時刻。次の通知の時刻も出る |
+
+| 推移 | 設定 |
+| --- | --- |
+| <img src="docs/screenshots/progress.png" width="240" alt="推移"> | <img src="docs/screenshots/settings.png" width="240" alt="設定"> |
+| 体重のグラフと、通った日のカレンダー | 週の目標、通知のタイミング、通知が届くかの確認、Googleカレンダー連携 |
+
 ## 構成
 
 | モジュール | 中身 |
