@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- アダプティブアイコンの前景：円を描く白い矢印3本と、真ん中に白いダンベル。
+     108dp のうち中央 72dp に収める。背景の濃い灰色は @color/icon_background -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 矢印（弧と▲をひとつの形にして、120°ずつ回して3本） -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M59.51,22.73 A31.75,31.75 0 0 1 85.44,58.42 L89.65,59.01 L80.89,64.86 L75.79,57.06 L79.99,57.65 A26.25,26.25 0 0 0 58.56,28.15 Z" />
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:rotation="120">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M59.51,22.73 A31.75,31.75 0 0 1 85.44,58.42 L89.65,59.01 L80.89,64.86 L75.79,57.06 L79.99,57.65 A26.25,26.25 0 0 0 58.56,28.15 Z" />
+    </group>
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:rotation="240">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M59.51,22.73 A31.75,31.75 0 0 1 85.44,58.42 L89.65,59.01 L80.89,64.86 L75.79,57.06 L79.99,57.65 A26.25,26.25 0 0 0 58.56,28.15 Z" />
+    </group>
+
+    <!-- ダンベル（通知アイコンと同じ形を 24 → 108 に拡大して中央に置く） -->
+    <group
+        android:pivotX="12"
+        android:pivotY="12"
+        android:scaleX="1.7"
+        android:scaleY="1.7"
+        android:translateX="42"
+        android:translateY="42">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M2,9h2v6h-2z M5,7h2.5v10h-2.5z M16.5,7h2.5v10h-2.5z M20,9h2v6h-2z M7.5,11h9v2h-9z" />
+    </group>
+</vector>
