@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  PC 同期（フェーズ2）は家の Wi-Fi の中の PC へ HTTP（暗号化なし）でつなぐ。
+  PC の IP アドレスはペアリングのときに入力するので、ここでは決められない。
+  このアプリがつなぐ先は自宅の PC だけなので、暗号化なしの通信を許可する。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

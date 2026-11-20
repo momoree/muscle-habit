@@ -17,8 +17,8 @@ android {
         applicationId = "com.oashobi.musclehabit"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
     buildTypes {
@@ -79,6 +79,12 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.7")
 
     implementation("com.patrykandpatrick.vico:compose-m3:2.1.3")
+
+    // PC との同期（フェーズ2）
+    implementation("io.ktor:ktor-client-okhttp:3.1.3")
+    implementation("io.ktor:ktor-client-content-negotiation:3.1.3")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.3")
+    implementation("androidx.work:work-runtime-ktx:2.10.1")
 
     testImplementation("junit:junit:4.13.2")
 }

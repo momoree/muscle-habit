@@ -39,4 +39,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun exerciseDao(): ExerciseDao
     abstract fun workoutDao(): WorkoutDao
     abstract fun workoutGroupDao(): WorkoutGroupDao
+    abstract fun syncDao(): SyncDao
 }

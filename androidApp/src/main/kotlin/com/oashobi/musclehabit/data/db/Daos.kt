@@ -137,3 +137,48 @@ interface WorkoutGroupDao {
     @Query("UPDATE workout_group_items SET deleted = 1, synced = 0, updatedAt = :now WHERE deleted = 0 AND groupId = :groupId")
     suspend fun softDeleteItems(groupId: String, now: Instant)
 }
+
+/**
+ * PC 同期（フェーズ2）。PC に送るのは予定・チェックイン・体重の3つ。
+ * synced = 0 の行（削除の印が付いた行も含む）が未送信。
+ */
+@Dao
+interface SyncDao {
+    @Query("SELECT * FROM schedules WHERE synced = 0")
+    suspend fun pendingSchedules(): List<ScheduleEntity>
+
+    @Query("SELECT * FROM visits WHERE synced = 0")
+    suspend fun pendingVisits(): List<VisitEntity>
+
+    @Query("SELECT * FROM body_records WHERE synced = 0")
+    suspend fun pendingBodyRecords(): List<BodyRecordEntity>
+
+    @Query(
+        """
+        SELECT (SELECT COUNT(*) FROM schedules WHERE synced = 0)
+             + (SELECT COUNT(*) FROM visits WHERE synced = 0)
+             + (SELECT COUNT(*) FROM body_records WHERE synced = 0)
+        """,
+    )
+    fun observePendingCount(): Flow<Int>
+
+    // 送ったあとで書き換えられた行は送り直すため、updatedAt が同じときだけ送信済みにする
+    @Query("UPDATE schedules SET synced = 1 WHERE id = :id AND updatedAt = :updatedAt")
+    suspend fun markScheduleSynced(id: String, updatedAt: Instant)
+
+    @Query("UPDATE visits SET synced = 1 WHERE id = :id AND updatedAt = :updatedAt")
+    suspend fun markVisitSynced(id: String, updatedAt: Instant)
+
+    @Query("UPDATE body_records SET synced = 1 WHERE id = :id AND updatedAt = :updatedAt")
+    suspend fun markBodyRecordSynced(id: String, updatedAt: Instant)
+
+    // 別の PC とつなぎ直したときは全部送り直す
+    @Query("UPDATE schedules SET synced = 0")
+    suspend fun resetSchedules()
+
+    @Query("UPDATE visits SET synced = 0")
+    suspend fun resetVisits()
+
+    @Query("UPDATE body_records SET synced = 0")
+    suspend fun resetBodyRecords()
+}

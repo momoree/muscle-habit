@@ -116,6 +116,7 @@ fun ProgressScreen(
             title = { Text(date.longJp()) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (u.selectedMinimum) Text("最小目標で達成（着いたら成功の日）", fontSize = 13.sp, color = AppColors.Primary, fontWeight = FontWeight.Bold)
                     when {
                         workout != null -> workout.lines(u.exercises).forEach { (name, detail) ->
                             Row(Modifier.fillMaxWidth()) {
@@ -123,7 +124,7 @@ fun ProgressScreen(
                                 Text(detail, fontSize = 14.sp, color = AppColors.SubText)
                             }
                         }
-                        u.selectedVisitId != null -> Text("チェックインのみ（トレーニングの記録はありません）")
+                        u.selectedVisitId != null -> Text(if (u.selectedMinimum) "トレーニングの記録はありません" else "チェックインのみ（トレーニングの記録はありません）")
                         else -> Text("この日は行っていません")
                     }
                 }

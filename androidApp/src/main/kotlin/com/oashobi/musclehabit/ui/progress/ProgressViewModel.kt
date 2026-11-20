@@ -9,6 +9,7 @@ import com.oashobi.musclehabit.data.VisitRepository
 import com.oashobi.musclehabit.data.WorkoutRepository
 import com.oashobi.musclehabit.data.db.BodyRecordEntity
 import com.oashobi.musclehabit.data.db.ExerciseEntity
+import com.oashobi.musclehabit.shared.model.VisitType
 import com.oashobi.musclehabit.shared.usecase.WeekMath
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
@@ -40,6 +41,8 @@ data class ProgressUi(
     val selectedWorkout: DayWorkout? = null,
     /** 選んだ日に行っていれば、そのチェックインのID（トレーニングの編集に使う） */
     val selectedVisitId: String? = null,
+    /** 選んだ日を最小目標モードで記録したか */
+    val selectedMinimum: Boolean = false,
     val exercises: Map<String, ExerciseEntity> = emptyMap(),
 )
 
@@ -77,6 +80,7 @@ class ProgressViewModel @Inject constructor(
             selectedDate = sel.date,
             selectedWorkout = sel.date?.let { d -> history.firstOrNull { it.date == d } },
             selectedVisitId = sel.date?.let { d -> visitList.firstOrNull { it.date == d && it.type.countsAsVisit }?.id },
+            selectedMinimum = sel.date?.let { d -> visitList.any { it.date == d && it.type == VisitType.MINIMUM } } ?: false,
             exercises = exercises.associateBy { it.id },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProgressUi())

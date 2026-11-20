@@ -65,10 +65,15 @@ object ReminderText {
 
     fun title(): String = "今日はジムの日"
 
-    fun body(gymAt: LocalDateTime, remaining: Int): String {
+    /**
+     * @param daysLeft 今週、今日を含めてまだ行ける日数。残り回数がこれを超えたら（今週中に届かないなら）
+     *   回数は言わずに「行けた分だけ前進」と伝える。
+     */
+    fun body(gymAt: LocalDateTime, remaining: Int, daysLeft: Int = 7): String {
         val time = gymAt.format(hm)
         return when {
             remaining <= 0 -> "${time}にジムの予定です。今週の目標は達成済み、この調子で"
+            remaining > daysLeft -> "${time}にジムの予定です。行けた分だけ前進です"
             remaining == 1 -> "${time}にジムの予定です。今週あと1回で達成"
             else -> "${time}にジムの予定です。今週あと${remaining}回"
         }

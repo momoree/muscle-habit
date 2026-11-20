@@ -13,8 +13,10 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.oashobi.musclehabit.MainActivity
 import com.oashobi.musclehabit.R
+import com.oashobi.musclehabit.shared.usecase.PrepText
 import com.oashobi.musclehabit.shared.usecase.ReminderText
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import javax.inject.Inject
@@ -28,16 +30,40 @@ class Notifications @Inject constructor(
         const val CHANNEL_REMINDER = "reminder"
         const val ID_REMINDER = 1
         const val ID_DONE = 2
+        const val ID_PREP = 3
+        const val CHANNEL_PREP = "prep"
         private const val PRIMARY = 0xFF0E7C6B.toInt()
     }
 
     private val manager = NotificationManagerCompat.from(context)
 
     fun createChannels() {
-        val channel = NotificationChannel(CHANNEL_REMINDER, "ジムの予定", NotificationManager.IMPORTANCE_HIGH).apply {
+        val reminder = NotificationChannel(CHANNEL_REMINDER, "ジムの予定", NotificationManager.IMPORTANCE_HIGH).apply {
             description = "予定時刻の前に届く当日通知"
         }
-        context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        val prep = NotificationChannel(CHANNEL_PREP, "前日の準備", NotificationManager.IMPORTANCE_DEFAULT).apply {
+            description = "ジムの日の前の晩に届く持ち物のリスト"
+        }
+        context.getSystemService(NotificationManager::class.java).createNotificationChannels(listOf(reminder, prep))
+    }
+
+    /** 前日の準備リスト。開くとホームに持ち物のチェックリストが出る。 */
+    fun showPrep(gymDate: LocalDate, items: List<String>) {
+        if (!hasPermission()) return
+        val list = items.joinToString("\n") { "□ $it" }
+        val notification = NotificationCompat.Builder(context, CHANNEL_PREP)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setColor(PRIMARY)
+            .setContentTitle(PrepText.title())
+            .setContentText(PrepText.body(items))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(if (items.isEmpty()) PrepText.body(items) else list))
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setContentIntent(openApp())
+            .setAutoCancel(true)
+            // ジムの日が終わったら自然に消えるように
+            .setTimeoutAfter(Duration.between(LocalDateTime.now(), gymDate.plusDays(1).atStartOfDay()).toMillis().coerceAtLeast(60_000))
+            .build()
+        manager.notify(ID_PREP, notification)
     }
 
     fun hasPermission(): Boolean =
@@ -45,14 +71,14 @@ class Notifications @Inject constructor(
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
     /** 当日通知。通知から「行った」「今日はパス」を選べる。 */
-    fun showReminder(gymAt: LocalDateTime, remaining: Int) {
+    fun showReminder(gymAt: LocalDateTime, remaining: Int, daysLeft: Int = 7) {
         if (!hasPermission()) return
         val date = gymAt.toLocalDate()
         val notification = NotificationCompat.Builder(context, CHANNEL_REMINDER)
             .setSmallIcon(R.drawable.ic_notification)
             .setColor(PRIMARY)
             .setContentTitle(ReminderText.title())
-            .setContentText(ReminderText.body(gymAt, remaining))
+            .setContentText(ReminderText.body(gymAt, remaining, daysLeft))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setContentIntent(openApp())
@@ -79,6 +105,8 @@ class Notifications @Inject constructor(
     }
 
     fun cancelReminder() = manager.cancel(ID_REMINDER)
+
+    fun cancelPrep() = manager.cancel(ID_PREP)
 
     private fun openApp(): PendingIntent = PendingIntent.getActivity(
         context,

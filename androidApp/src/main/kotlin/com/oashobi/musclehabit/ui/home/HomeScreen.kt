@@ -82,20 +82,26 @@ fun HomeScreen(
         val p = s.progress
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(s.today.longJp(), fontSize = 14.sp, color = AppColors.SubText)
-            val headline = when {
-                p == null -> ""
-                p.achieved -> "今週の目標を達成！"
-                else -> "今週の目標まで、あと${p.remaining}回"
-            }
-            Text(headline, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Text(s.nudge?.headline ?: "", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            s.nudge?.sub?.let { Text(it, fontSize = 13.sp, color = AppColors.SubText) }
         }
 
         if (p != null) WeekCard(p.count, p.goal, p.streakWeeks, p.visitedDays, s.today.dayOfWeek.value, p.weekStart)
 
         ScheduleCard(s, onOpenSchedule)
 
+        if (s.prepDate != null && !s.checkedIn) {
+            PrepCard(
+                title = if (s.prepDate == s.today) "今日の持ち物" else "明日の準備",
+                items = s.prepItems,
+                checked = s.prepChecked,
+                onToggle = vm::togglePrep,
+            )
+        }
+
         if (s.checkedIn) {
             CheckedInCard(
+                title = if (s.minimum) "最小目標で達成" else "チェックイン済み",
                 onOpenWorkout = { s.todayVisit?.let { onOpenWorkout(it.id, false) } },
                 onCancel = { confirmCancel = true },
             )
@@ -120,9 +126,14 @@ fun HomeScreen(
                     color = AppColors.SubText,
                     modifier = Modifier.padding(horizontal = 4.dp),
                 )
-            } else if (s.todaySlot != null) {
-                TextButton(onClick = vm::pass, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                    Text("今日はパス", color = AppColors.SubText)
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                // 最小目標モード：気が乗らない日は「着いたら成功」で記録できる
+                TextButton(onClick = vm::checkInMinimum) {
+                    Text("着いただけでOKにする", color = AppColors.PrimaryDark)
+                }
+                if (!s.passed && s.todaySlot != null) {
+                    TextButton(onClick = vm::pass) { Text("今日はパス", color = AppColors.SubText) }
                 }
             }
         }
@@ -280,7 +291,7 @@ private fun ScheduleCard(s: HomeState, onOpenSchedule: () -> Unit) {
 }
 
 @Composable
-private fun CheckedInCard(onOpenWorkout: () -> Unit, onCancel: () -> Unit) {
+private fun CheckedInCard(title: String, onOpenWorkout: () -> Unit, onCancel: () -> Unit) {
     AppCard(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(
@@ -292,7 +303,7 @@ private fun CheckedInCard(onOpenWorkout: () -> Unit, onCancel: () -> Unit) {
                 Icon(Icons.Outlined.Check, null, tint = AppColors.Surface)
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("チェックイン済み", fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                Text(title, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
                 Text(
                     "取り消す",
                     fontSize = 12.sp,
@@ -309,6 +320,50 @@ private fun CheckedInCard(onOpenWorkout: () -> Unit, onCancel: () -> Unit) {
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp),
             ) {
                 Text("記録する", fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+/** 前日の準備リスト（フェーズ2）。持ち物をタップしてチェックする。 */
+@Composable
+private fun PrepCard(title: String, items: List<String>, checked: Set<String>, onToggle: (String) -> Unit) {
+    AppCard(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 14.dp), verticalSpacing = 4) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text(title, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            val done = items.count { it in checked }
+            Text(
+                if (items.isNotEmpty() && done == items.size) "準備OK" else "$done / ${items.size}",
+                fontSize = 12.sp,
+                color = if (items.isNotEmpty() && done == items.size) AppColors.Primary else AppColors.SubText,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        if (items.isEmpty()) {
+            Text("持ち物は設定で追加できます", fontSize = 13.sp, color = AppColors.SubText)
+        }
+        items.forEach { item ->
+            val on = item in checked
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clickable { onToggle(item) }
+                    .padding(vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Box(
+                    Modifier
+                        .size(22.dp)
+                        .then(
+                            if (on) Modifier.background(AppColors.Primary, RoundedCornerShape(6.dp))
+                            else Modifier.border(2.dp, AppColors.SubText.copy(alpha = 0.5f), RoundedCornerShape(6.dp)),
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (on) Icon(Icons.Outlined.Check, null, tint = AppColors.Surface, modifier = Modifier.size(16.dp))
+                }
+                Text(item, fontSize = 15.sp, color = if (on) AppColors.SubText else AppColors.Text)
             }
         }
     }

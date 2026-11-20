@@ -19,3 +19,5 @@ rootProject.name = "muscle-habit"
 include(":shared")
 // androidApp: スマホアプリ本体
 include(":androidApp")
+// desktopApp: PC 版（フェーズ2）。トレイ常駐の通知・記録の閲覧・スマホからの同期を受け取る
+include(":desktopApp")

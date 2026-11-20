@@ -28,6 +28,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -41,6 +42,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -52,8 +55,13 @@ import com.oashobi.musclehabit.ui.theme.AppColors
 import com.oashobi.musclehabit.ui.workout.NameInputDialog
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 private val LEAD_OPTIONS = listOf(0, 15, 30, 45, 60, 90, 120)
+private val PREP_TIMES = listOf(19, 20, 21, 22, 23).flatMap { h -> listOf(LocalTime.of(h, 0), LocalTime.of(h, 30)) }.dropLast(1)
+private val HM = DateTimeFormatter.ofPattern("H:mm")
+private val SYNC_TIME = DateTimeFormatter.ofPattern("M/d H:mm")
 
 @SuppressLint("BatteryLife")
 @Composable
@@ -162,6 +170,80 @@ fun SettingsScreen(onOpenExercises: () -> Unit, vm: SettingsViewModel = hiltView
             HorizontalDivider(color = AppColors.Neutral)
             SettingRow("通知を試す") {
                 TextButton(onClick = vm::testNotification) { Text("いま出す", fontWeight = FontWeight.Bold) }
+            }
+        }
+
+        Section("前日の準備") {
+            SettingRow("前の晩に持ち物を知らせる") {
+                Switch(checked = s.prepEnabled, onCheckedChange = vm::setPrepEnabled)
+            }
+            if (s.prepEnabled) {
+                HorizontalDivider(color = AppColors.Neutral)
+                var timeMenu by remember { mutableStateOf(false) }
+                SettingRow("通知の時刻") {
+                    TextButton(onClick = { timeMenu = true }) { Text("前日の ${s.prepTime.format(HM)}", fontWeight = FontWeight.Bold) }
+                    DropdownMenu(expanded = timeMenu, onDismissRequest = { timeMenu = false }) {
+                        PREP_TIMES.forEach { t ->
+                            DropdownMenuItem(text = { Text(t.format(HM)) }, onClick = { timeMenu = false; vm.setPrepTime(t) })
+                        }
+                    }
+                }
+                HorizontalDivider(color = AppColors.Neutral)
+                var editItems by remember { mutableStateOf(false) }
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { editItems = true }
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("持ち物", fontSize = 15.sp)
+                        Text(s.prepItems.joinToString("・").ifEmpty { "なし" }, fontSize = 12.sp, color = AppColors.SubText)
+                    }
+                    Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, tint = AppColors.SubText)
+                }
+                if (editItems) {
+                    PrepItemsDialog(
+                        initial = s.prepItems.joinToString("\n"),
+                        onDismiss = { editItems = false },
+                        onSave = { vm.setPrepItems(it); editItems = false },
+                    )
+                }
+            }
+        }
+
+        Section("PC と同期") {
+            var pairing by remember { mutableStateOf(false) }
+            val busy by vm.syncBusy.collectAsStateWithLifecycle()
+            if (!s.syncPaired) {
+                Text(
+                    "家の Wi-Fi につながっているときに、予定・チェックイン・体重を PC アプリへ送ります。PC では予定の前の通知と、記録の閲覧ができます。",
+                    fontSize = 12.sp,
+                    color = AppColors.SubText,
+                    modifier = Modifier.padding(vertical = 8.dp),
+                )
+                SettingRow("PC とつなぐ") {
+                    TextButton(onClick = { pairing = true }) { Text("つなぐ", fontWeight = FontWeight.Bold) }
+                }
+            } else {
+                Column(Modifier.padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("「${s.syncPcName}」とつながっています", fontSize = 15.sp)
+                    Text(s.syncHost ?: "", fontSize = 12.sp, color = AppColors.SubText)
+                    val last = s.lastSyncAt?.let {
+                        java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime().format(SYNC_TIME)
+                    }
+                    Text(if (last != null) "最後の同期：$last" else "まだ同期していません", fontSize = 12.sp, color = AppColors.SubText)
+                    s.lastSyncError?.let { Text(it, fontSize = 12.sp, color = AppColors.Danger) }
+                }
+                HorizontalDivider(color = AppColors.Neutral)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    TextButton(onClick = vm::syncNow, enabled = !busy) { Text(if (busy) "同期中…" else "今すぐ同期", fontWeight = FontWeight.Bold) }
+                    TextButton(onClick = vm::unpair) { Text("接続を解除", color = AppColors.SubText) }
+                }
+            }
+            if (pairing) {
+                PairDialog(busy = busy, onDismiss = { pairing = false }, onPair = { host, code -> vm.pair(host, code) { ok -> if (ok) pairing = false } })
             }
         }
 
@@ -331,4 +413,60 @@ fun ExercisesScreen(vm: SettingsViewModel = hiltViewModel()) {
             onSave = { vm.rename(e, it); renaming = null },
         )
     }
+}
+
+/** 持ち物の編集（1行に1つ） */
+@Composable
+private fun PrepItemsDialog(initial: String, onDismiss: () -> Unit, onSave: (String) -> Unit) {
+    var text by remember { mutableStateOf(initial) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("持ち物") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("1行に1つずつ書いてください", fontSize = 13.sp, color = AppColors.SubText)
+                OutlinedTextField(value = text, onValueChange = { text = it }, minLines = 4, modifier = Modifier.fillMaxWidth())
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(text) }) { Text("保存") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("やめる") } },
+    )
+}
+
+/** PC アプリに表示された IP アドレスとペアリングコードを入れる */
+@Composable
+private fun PairDialog(busy: Boolean, onDismiss: () -> Unit, onPair: (String, String) -> Unit) {
+    var host by remember { mutableStateOf("") }
+    var code by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("PC とつなぐ") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("PC アプリの「スマホとつなぐ」に出ている IP アドレスとコードを入れてください。スマホと PC は同じ Wi-Fi につないでおきます。", fontSize = 13.sp, color = AppColors.SubText)
+                OutlinedTextField(
+                    value = host,
+                    onValueChange = { host = it },
+                    label = { Text("IP アドレス（例：192.168.1.10）") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = code,
+                    onValueChange = { code = it.filter(Char::isDigit).take(6) },
+                    label = { Text("ペアリングコード（6桁）") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onPair(host, code) }, enabled = !busy && host.isNotBlank() && code.length == 6) {
+                Text(if (busy) "つないでいます…" else "つなぐ")
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("やめる") } },
+    )
 }

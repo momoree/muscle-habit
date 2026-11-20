@@ -16,10 +16,14 @@ import com.oashobi.musclehabit.data.db.ExerciseEntity
 import com.oashobi.musclehabit.domain.CheckInActions
 import com.oashobi.musclehabit.notify.AlarmScheduler
 import com.oashobi.musclehabit.notify.Notifications
+import com.oashobi.musclehabit.shared.model.VisitType
+import com.oashobi.musclehabit.sync.SyncRepository
+import com.oashobi.musclehabit.sync.SyncResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.DayOfWeek
 import java.time.LocalDateTime
+import java.time.LocalTime
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,6 +53,7 @@ class SettingsViewModel @Inject constructor(
     private val visits: VisitRepository,
     private val body: BodyRepository,
     private val workouts: WorkoutRepository,
+    private val sync: SyncRepository,
 ) : ViewModel() {
 
     val settingsState: StateFlow<AppSettings> =
@@ -97,6 +102,53 @@ class SettingsViewModel @Inject constructor(
         val remaining = actions.weekProgress().remaining
         notifications.showReminder(LocalDateTime.now().plusMinutes(30).withSecond(0).withNano(0), remaining)
         if (!notifications.hasPermission()) _message.value = "通知が許可されていません"
+    }
+
+    // ---- 前日の準備リスト ----
+
+    fun setPrepEnabled(v: Boolean) = viewModelScope.launch {
+        settings.setPrepEnabled(v)
+        scheduler.reschedule()
+    }
+
+    fun setPrepTime(v: LocalTime) = viewModelScope.launch {
+        settings.setPrepTime(v)
+        scheduler.reschedule()
+    }
+
+    fun setPrepItems(text: String) = viewModelScope.launch { settings.setPrepItems(text.lines()) }
+
+    // ---- PC と同期 ----
+
+    private val _syncBusy = MutableStateFlow(false)
+    val syncBusy: StateFlow<Boolean> = _syncBusy
+
+    /** ペアリング。成功したら true を返してダイアログを閉じる */
+    fun pair(host: String, code: String, onDone: (Boolean) -> Unit) = viewModelScope.launch {
+        _syncBusy.value = true
+        sync.pair(host, code)
+            .onSuccess { pc ->
+                _message.value = "「$pc」とつながりました。記録を送ります"
+                sync.syncNow()
+                onDone(true)
+            }
+            .onFailure { _message.value = it.message ?: "つなげませんでした"; onDone(false) }
+        _syncBusy.value = false
+    }
+
+    fun syncNow() = viewModelScope.launch {
+        _syncBusy.value = true
+        _message.value = when (val r = sync.syncNow()) {
+            is SyncResult.Ok -> if (r.sent == 0) "PC と同期しました（新しい記録はありません）" else "PC に ${r.sent}件送りました"
+            is SyncResult.Failed -> r.message
+            SyncResult.NotPaired -> "PC とつながっていません"
+        }
+        _syncBusy.value = false
+    }
+
+    fun unpair() = viewModelScope.launch {
+        sync.unpair()
+        _message.value = "PC との接続を解除しました"
     }
 
     // ---- Googleカレンダー連携 ----
@@ -155,7 +207,7 @@ class SettingsViewModel @Inject constructor(
         return buildString {
             appendLine("種類,日付,項目,値1,値2")
             visits.getAll().sortedBy { it.date }.forEach { v ->
-                appendLine("チェックイン,${v.date},${if (v.type.countsAsVisit) "行った" else "パス"},,")
+                appendLine("チェックイン,${v.date},${when (v.type) { VisitType.NORMAL -> "行った"; VisitType.MINIMUM -> "行った（最小目標）"; VisitType.PASS -> "パス" }},,")
             }
             body.getAll().forEach { b ->
                 appendLine("体重,${b.date},体重kg/体脂肪%,${b.weightKg},${b.bodyFatPercent ?: ""}")
