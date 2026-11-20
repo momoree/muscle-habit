@@ -22,7 +22,9 @@ object AutoStart {
     fun setEnabled(on: Boolean): Boolean {
         val exe = exePath ?: return false
         val code = if (on) {
-            reg("add", KEY, "/v", NAME, "/t", "REG_SZ", "/d", "\"$exe\" $MINIMIZED_ARG", "/f")
+            // 値は "C:\...\MuscleHabit.exe" --minimized。Java は空白を含む引数を "..." で囲むので、
+            // 中の引用符は \" と書いて reg.exe にそのまま渡す
+            reg("add", KEY, "/v", NAME, "/t", "REG_SZ", "/d", "\\\"$exe\\\" $MINIMIZED_ARG", "/f")
         } else {
             reg("delete", KEY, "/v", NAME, "/f")
         }
