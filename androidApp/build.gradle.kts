@@ -17,8 +17,8 @@ android {
         applicationId = "com.oashobi.musclehabit"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
     }
 
     buildTypes {
@@ -85,6 +85,10 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:3.1.3")
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.3")
     implementation("androidx.work:work-runtime-ktx:2.10.1")
+
+    // フェーズ3：体型写真の向き（Exif）、ホーム画面ウィジェット
+    implementation("androidx.exifinterface:exifinterface:1.4.1")
+    implementation("androidx.glance:glance-appwidget:1.1.1")
 
     testImplementation("junit:junit:4.13.2")
 }

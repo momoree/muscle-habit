@@ -62,6 +62,12 @@ private fun appIcon(): Painter =
  * ログイン時の自動起動（--minimized）ではウィンドウを出さずにトレイだけで起動する。
  */
 fun main(args: Array<String>) {
+    // 2つ目は起動しない（同期のポートを取り合ったり、通知が二重に出たりするため）
+    if (!SingleInstance.acquire()) {
+        System.err.println("MuscleHabit はもう起動しています")
+        return
+    }
+    AppLog.enabled = true
     val engine = AppEngine()
     application {
         val icon = remember { appIcon() }
@@ -69,8 +75,14 @@ fun main(args: Array<String>) {
         var windowVisible by remember { mutableStateOf(AutoStart.MINIMIZED_ARG !in args) }
 
         DisposableEffect(Unit) {
-            engine.start { title, body -> trayState.sendNotification(Notification(title, body, Notification.Type.Info)) }
+            engine.start()
             onDispose { engine.stop() }
+        }
+        // 予定の前の通知は画面のスレッドで出す（TrayState は受け手がいないと捨てるため）
+        LaunchedEffect(Unit) {
+            engine.notifications.collect { (title, body) ->
+                trayState.sendNotification(Notification(title, body, Notification.Type.Info))
+            }
         }
 
         Tray(

@@ -182,3 +182,12 @@ interface SyncDao {
     @Query("UPDATE body_records SET synced = 0")
     suspend fun resetBodyRecords()
 }
+
+@Dao
+interface BodyPhotoDao {
+    @Query("SELECT * FROM body_photos WHERE deleted = 0 ORDER BY date DESC, updatedAt DESC")
+    fun observeAll(): Flow<List<BodyPhotoEntity>>
+
+    @Upsert
+    suspend fun upsert(entity: BodyPhotoEntity)
+}

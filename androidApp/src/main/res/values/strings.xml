@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MuscleHabit</string>
+    <string name="widget_description">今週の達成状況。アプリを開かずにチェックインできます</string>
 </resources>

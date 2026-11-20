@@ -9,7 +9,10 @@ import io.ktor.server.engine.EmbeddedServer
 import java.time.LocalDateTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -49,10 +52,18 @@ class AppEngine(
     private var wrongCodeCount = 0
     private val lock = Any()
 
-    fun start(notify: (title: String, body: String) -> Unit) {
+    /**
+     * 出す通知の順番待ち。画面側（Main）が受け取って、トレイから出す。
+     * Compose の TrayState.sendNotification は受け手がいないと捨てるので、裏のスレッドから直接呼ばない。
+     */
+    private val _notifications = Channel<Pair<String, String>>(Channel.BUFFERED)
+    val notifications: Flow<Pair<String, String>> = _notifications.receiveAsFlow()
+
+    fun start() {
+        AppLog.write("起動")
         scope.launch { connectDatabase() }
         startServer()
-        scope.launch { notifyLoop(notify) }
+        scope.launch { notifyLoop() }
     }
 
     fun stop() {
@@ -74,6 +85,7 @@ class AppEngine(
             s.init()
             store = s
             _state.update { it.copy(dbConnected = true, dbError = null, snapshot = s.snapshot()) }
+            AppLog.write("MySQL につながりました")
         } catch (e: Exception) {
             store = null
             _state.update { it.copy(dbConnected = false, dbError = describe(e)) }
@@ -168,6 +180,7 @@ class AppEngine(
             throw DatabaseUnavailable(e)
         }
         _state.update { it.copy(snapshot = s.snapshot(), lastSyncAt = LocalDateTime.now()) }
+        AppLog.write("スマホから $saved 件を保存")
         return saved
     }
 
@@ -180,9 +193,16 @@ class AppEngine(
      * スリープから戻ったときも、その時点で計算し直すので、予定時刻を過ぎていれば出さない。
      * その日にスマホでチェックイン（またはパス）した記録が届いていれば出さない。
      */
-    private suspend fun notifyLoop(notify: (String, String) -> Unit) {
+    private suspend fun notifyLoop() {
         while (scope.isActive) {
-            runCatching { checkNotification(LocalDateTime.now())?.let { (t, b) -> notify(t, b) } }
+            try {
+                checkNotification(LocalDateTime.now())?.let { n ->
+                    AppLog.write("通知：${n.first}／${n.second}")
+                    _notifications.trySend(n)
+                }
+            } catch (e: Exception) {
+                AppLog.write("通知の確認に失敗：$e")
+            }
             delay(30_000)
         }
     }

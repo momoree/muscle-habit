@@ -42,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.oashobi.musclehabit.data.db.BodyRecordEntity
 import com.oashobi.musclehabit.shared.usecase.WorkoutFormat
 import com.oashobi.musclehabit.ui.common.AppCard
+import com.oashobi.musclehabit.ui.photos.PhotoEntryCard
 import com.oashobi.musclehabit.ui.common.lines
 import com.oashobi.musclehabit.ui.common.longJp
 import com.oashobi.musclehabit.ui.theme.AppColors
@@ -70,6 +71,7 @@ import kotlin.math.floor
 fun ProgressScreen(
     onRecordBody: () -> Unit,
     onEditWorkout: (visitId: String, date: LocalDate) -> Unit,
+    onOpenPhotos: () -> Unit,
     vm: ProgressViewModel = hiltViewModel(),
 ) {
     val u by vm.ui.collectAsStateWithLifecycle()
@@ -107,6 +109,10 @@ fun ProgressScreen(
                 Stat("${u.month.monthValue}月に通った日", "${u.visitedInMonth.size}日", AppColors.Text, Modifier.weight(1f))
             }
         }
+
+        MonthlyCard(u.monthly, u.monthRange, vm::setMonthRange)
+
+        PhotoEntryCard(onOpen = onOpenPhotos)
     }
 
     u.selectedDate?.let { date ->

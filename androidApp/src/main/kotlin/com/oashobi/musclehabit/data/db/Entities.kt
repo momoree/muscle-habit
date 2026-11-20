@@ -127,3 +127,17 @@ data class WorkoutGroupItemEntity(
     val deleted: Boolean = false,
     val synced: Boolean = false,
 )
+
+/**
+ * 体型写真（フェーズ3）。画像はアプリ専用領域（filesDir/photos）に置き、PC には送らない。
+ * filePath は filesDir からの相対パス（例：photos/xxxx.jpg）。
+ */
+@Entity(tableName = "body_photos", indices = [Index("date")])
+data class BodyPhotoEntity(
+    @PrimaryKey val id: String = newId(),
+    val date: LocalDate,
+    val filePath: String,
+    val updatedAt: Instant = Instant.now(),
+    val deleted: Boolean = false,
+    val synced: Boolean = false,
+)

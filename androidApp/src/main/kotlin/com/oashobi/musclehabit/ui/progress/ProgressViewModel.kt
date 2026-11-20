@@ -10,6 +10,8 @@ import com.oashobi.musclehabit.data.WorkoutRepository
 import com.oashobi.musclehabit.data.db.BodyRecordEntity
 import com.oashobi.musclehabit.data.db.ExerciseEntity
 import com.oashobi.musclehabit.shared.model.VisitType
+import com.oashobi.musclehabit.shared.usecase.MonthSummary
+import com.oashobi.musclehabit.shared.usecase.MonthlyMath
 import com.oashobi.musclehabit.shared.usecase.WeekMath
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
@@ -28,6 +30,12 @@ enum class Range(val label: String, val months: Long?) {
     ALL("全期間", null),
 }
 
+/** 通った回数と体重の重ね表示の期間 */
+enum class MonthRange(val label: String, val months: Int) {
+    HALF("6か月", 6),
+    YEAR("1年", 12),
+}
+
 data class ProgressUi(
     val range: Range = Range.MONTH3,
     /** 範囲内の体重・体脂肪の記録（古い順） */
@@ -44,9 +52,12 @@ data class ProgressUi(
     /** 選んだ日を最小目標モードで記録したか */
     val selectedMinimum: Boolean = false,
     val exercises: Map<String, ExerciseEntity> = emptyMap(),
+    val monthRange: MonthRange = MonthRange.HALF,
+    /** 月ごとの通った日数と体重（古い順） */
+    val monthly: List<MonthSummary> = emptyList(),
 )
 
-private data class Selection(val range: Range, val month: YearMonth, val date: LocalDate?)
+private data class Selection(val range: Range, val month: YearMonth, val date: LocalDate?, val monthRange: MonthRange = MonthRange.HALF)
 
 @HiltViewModel
 class ProgressViewModel @Inject constructor(
@@ -82,10 +93,13 @@ class ProgressViewModel @Inject constructor(
             selectedVisitId = sel.date?.let { d -> visitList.firstOrNull { it.date == d && it.type.countsAsVisit }?.id },
             selectedMinimum = sel.date?.let { d -> visitList.any { it.date == d && it.type == VisitType.MINIMUM } } ?: false,
             exercises = exercises.associateBy { it.id },
+            monthRange = sel.monthRange,
+            monthly = MonthlyMath.summaries(visitDates, bodies.map { it.date to it.weightKg }, today, sel.monthRange.months),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProgressUi())
 
     fun setRange(r: Range) = selection.update { it.copy(range = r) }
     fun moveMonth(delta: Long) = selection.update { it.copy(month = it.month.plusMonths(delta)) }
     fun selectDate(d: LocalDate?) = selection.update { it.copy(date = d) }
+    fun setMonthRange(r: MonthRange) = selection.update { it.copy(monthRange = r) }
 }

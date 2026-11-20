@@ -1,5 +1,6 @@
 package com.oashobi.musclehabit.data.db
 
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
@@ -27,9 +28,12 @@ class Converters {
         WorkoutSetEntity::class,
         WorkoutGroupEntity::class,
         WorkoutGroupItemEntity::class,
+        BodyPhotoEntity::class,
     ],
-    version = 1,
+    // 2: 体型写真（body_photos）を追加（フェーズ3）。表を足すだけなので自動の移行で記録はそのまま残る
+    version = 2,
     exportSchema = true,
+    autoMigrations = [AutoMigration(from = 1, to = 2)],
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -40,4 +44,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun workoutDao(): WorkoutDao
     abstract fun workoutGroupDao(): WorkoutGroupDao
     abstract fun syncDao(): SyncDao
+    abstract fun bodyPhotoDao(): BodyPhotoDao
 }

@@ -36,6 +36,7 @@ import com.oashobi.musclehabit.data.SettingsRepository
 import com.oashobi.musclehabit.notify.Notifications
 import com.oashobi.musclehabit.ui.body.BodyRecordDialog
 import com.oashobi.musclehabit.ui.home.HomeScreen
+import com.oashobi.musclehabit.ui.photos.PhotosScreen
 import com.oashobi.musclehabit.ui.progress.ProgressScreen
 import com.oashobi.musclehabit.ui.schedule.ScheduleScreen
 import com.oashobi.musclehabit.ui.settings.ExercisesScreen
@@ -54,6 +55,7 @@ private enum class Tab(val route: String, val label: String, val icon: ImageVect
 }
 
 private const val ROUTE_EXERCISES = "exercises"
+private const val ROUTE_PHOTOS = "photos"
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -95,7 +97,7 @@ fun MainScreen(vm: MainViewModel = hiltViewModel()) {
         bottomBar = {
             NavigationBar(containerColor = AppColors.Surface) {
                 Tab.entries.forEach { tab ->
-                    val selected = route == tab.route || (tab == Tab.SETTINGS && route == ROUTE_EXERCISES)
+                    val selected = route == tab.route || (tab == Tab.SETTINGS && route == ROUTE_EXERCISES) || (tab == Tab.PROGRESS && route == ROUTE_PHOTOS)
                     NavigationBarItem(
                         selected = selected,
                         onClick = { go(tab.route) },
@@ -132,10 +134,12 @@ fun MainScreen(vm: MainViewModel = hiltViewModel()) {
                         workout = visitId to date.toString()
                         askBodyAfterWorkout = false
                     },
+                    onOpenPhotos = { nav.navigate(ROUTE_PHOTOS) },
                 )
             }
             composable(Tab.SETTINGS.route) { SettingsScreen(onOpenExercises = { nav.navigate(ROUTE_EXERCISES) }) }
             composable(ROUTE_EXERCISES) { ExercisesScreen() }
+            composable(ROUTE_PHOTOS) { PhotosScreen() }
         }
     }
 
