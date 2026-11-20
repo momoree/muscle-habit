@@ -55,7 +55,7 @@ compose.desktop {
             // PowerShell で .\gradlew :desktopApp:packageMsi
             targetFormats(TargetFormat.Msi)
             packageName = "MuscleHabit"
-            packageVersion = "1.0.0"
+            packageVersion = "1.0.1"
             description = "ジム通いの通知と記録の閲覧"
             vendor = "oashobi"
             // MySQL ドライバーと同期サーバーが使う Java のモジュール

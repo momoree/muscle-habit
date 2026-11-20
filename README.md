@@ -79,7 +79,7 @@
 PC は「通知」と「記録の閲覧」だけを担当し、入力はスマホで行う。スマホ → PC の片方向で、家の Wi-Fi の中だけで通信する。
 
 1. MySQL に `sql/setup.sql` を実行して、データベース `musclehabit` とユーザーを作る（パスワードは自分で決めて書き換える）。テーブルは PC アプリが起動時に作る。手で作るなら `sql/schema.sql`
-2. `.\gradlew :desktopApp:packageMsi` で作った `desktopApp\build\compose\binaries\main\msi\MuscleHabit-1.0.0.msi` を入れる（試すだけなら `.\gradlew :desktopApp:run`）
+2. `.\gradlew :desktopApp:packageMsi` で作った `desktopApp\build\compose\binaries\main\msi\MuscleHabit-1.0.1.msi` を入れる（試すだけなら `.\gradlew :desktopApp:run`）
 3. PC アプリの「設定」で MySQL のユーザー名とパスワードを入れる。「Windows のログイン時に起動する」をオンにする
 4. 初回はファイアウォールの確認が出るので、「プライベート ネットワーク」だけ許可する
 5. PC アプリの「スマホとつなぐ」に出る IP アドレスと6桁のコードを、スマホの「設定 → PC と同期 → つなぐ」に入れる
