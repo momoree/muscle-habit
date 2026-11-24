@@ -21,7 +21,7 @@
 
 | 記録 | スマホとつなぐ |
 | --- | --- |
-| <img src="docs/screenshots/pc-records.png" width="480" alt="PC 版の記録"> | <img src="docs/screenshots/pc-connect.png" width="480" alt="PC 版のスマホとつなぐ"> |
+| <img src="docs/screenshots/pc-records.png" width="480" alt="PC 版の記録"> | IPアドレスが移ってしまうため、画像なし |
 | 今週の達成と連続週数、今月通った日、今日の予定、通った日のカレンダー、体重・体脂肪のグラフ | スマホに入れる IP アドレスとペアリングコード、同期サーバーと MySQL の状態 |
 
 ## 構成
